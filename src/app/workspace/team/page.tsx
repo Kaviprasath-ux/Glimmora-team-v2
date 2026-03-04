@@ -1,8 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   PageTransition,
-  Card,
   Avatar,
   Badge,
   SkillChip,
@@ -10,19 +10,48 @@ import {
   Skeleton,
 } from "@/components/ui";
 import { useTeam } from "@/hooks/use-team";
-import { Users, Calendar, MessageCircle, Briefcase } from "lucide-react";
-import { formatDate, cn } from "@/lib/utils";
+import {
+  Users,
+  Calendar,
+  MessageCircle,
+  Briefcase,
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
-const statusColors = {
-  active: "bg-[#6B8F71]",
-  idle: "bg-[#B8A060]",
-  away: "bg-[#9C8E84]",
+/* ── Animations ── */
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.02 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
+  },
 };
 
-const statusCardStyles = {
-  active: "hover:shadow-[0_4px_20px_rgba(74,122,62,0.1)]",
-  idle: "hover:shadow-[0_4px_20px_rgba(184,164,76,0.1)]",
-  away: "hover:shadow-warm-md",
+const cardStyle = {
+  border: "1px solid rgba(0,0,0,0.06)",
+  boxShadow: "var(--shadow-warm)",
+} as const;
+
+/* ── Status → CSS variable mapping ── */
+const statusConfig: Record<
+  string,
+  { token: string; label: string }
+> = {
+  active: { token: "secondary", label: "Active" },
+  idle: { token: "accent-gold", label: "Idle" },
+  away: { token: "neutral-400", label: "Away" },
+};
+
+/* ── Role category → color token ── */
+const roleCategoryToken: Record<string, string> = {
+  Leadership: "primary",
+  Quality: "accent-teal",
+  Development: "secondary",
 };
 
 export default function TeamPage() {
@@ -32,11 +61,16 @@ export default function TeamPage() {
     return (
       <PageTransition>
         <div className="space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-40 rounded-[var(--radius-xl)]" />
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-40 rounded-2xl" />
+          <Skeleton className="h-[88px] rounded-2xl" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-52 rounded-[var(--radius-xl)]" />
+              <Skeleton key={i} className="h-56 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -44,182 +78,319 @@ export default function TeamPage() {
     );
   }
 
+  /* ── Group members by role category ── */
   const roleGroups = team.members.reduce(
     (acc, m) => {
-      const category = m.role.includes("Reviewer") || m.role.includes("Lead")
-        ? "Leadership"
-        : m.role.includes("QA") || m.role.includes("Testing")
-          ? "Quality"
-          : "Development";
+      const category =
+        m.role.includes("Reviewer") || m.role.includes("Lead")
+          ? "Leadership"
+          : m.role.includes("QA") || m.role.includes("Testing")
+            ? "Quality"
+            : "Development";
       acc[category] = (acc[category] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>,
   );
 
-  const roleAccents: Record<string, { bg: string; text: string; border: string }> = {
-    Leadership: { bg: "from-[#BFA094]/12 to-[#BFA094]/4", text: "text-[#BFA094]", border: "border-[#BFA094]/15" },
-    Quality: { bg: "from-[#A18072]/12 to-[#A18072]/4", text: "text-[#A18072]", border: "border-[#A18072]/15" },
-    Development: { bg: "from-[#5A6B4A]/12 to-[#5A6B4A]/4", text: "text-[#5A6B4A]", border: "border-[#5A6B4A]/15" },
-  };
-
   return (
     <PageTransition>
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-gradient-warm">My Team</h1>
-          <p className="mt-1 text-text-secondary">
+      <div className="space-y-6">
+        {/* ═══════════════════════════════════════
+            HERO — Clean Typography
+            (matches learning/skills/tasks pages)
+        ═══════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Team Formation
+          </span>
+          <h1
+            className="font-heading font-bold text-neutral-950 leading-tight mt-1"
+            style={{ fontSize: 28, letterSpacing: "-0.025em" }}
+          >
+            My Team
+          </h1>
+          <p className="mt-2 text-[13px] text-neutral-500 leading-relaxed max-w-2xl">
             Your current team assignment and members.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Team Info Card */}
-        <div className="rounded-[var(--radius-xl)] bg-white border border-black/[0.04] p-6 shadow-warm-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-[#5A6B4A] to-[#7A8F66] shadow-sm">
-                  <Briefcase className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-heading text-xl font-bold text-text-deep">
-                    {team.name}
-                  </h2>
-                  <p className="text-sm text-text-secondary">
-                    {team.projectName}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-3 text-sm text-text-secondary leading-relaxed max-w-xl">
-                {team.charter}
-              </p>
-              <p className="mt-2 text-[11px] text-text-muted flex items-center gap-1.5">
-                <Calendar className="h-3 w-3" />
-                Formed {formatDate(team.formedAt)}
-              </p>
+        {/* ═══════════════════════════════════════
+            TEAM INFO CARD — "Team Lineup" layout
+            Avatars in bottom strip with name+role
+        ═══════════════════════════════════════ */}
+        <motion.div
+          className="rounded-2xl bg-white p-6"
+          style={cardStyle}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.4,
+            delay: 0.06,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          {/* Top section: team info */}
+          <div className="flex items-center gap-3.5">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-secondary) 12%, transparent)",
+              }}
+            >
+              <Briefcase
+                className="h-5 w-5"
+                style={{ color: "var(--color-secondary)" }}
+              />
             </div>
-            <div className="flex -space-x-3">
-              {team.members.map((m) => (
-                <Avatar key={m.id} name={m.name} size="lg" className="ring-[3px] ring-white" />
-              ))}
+            <div>
+              <h2
+                className="text-[18px] font-bold text-neutral-900"
+                style={{ letterSpacing: "-0.01em" }}
+              >
+                {team.name}
+              </h2>
+              <p className="text-[12px] text-neutral-500">
+                {team.projectName}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Role Coverage */}
-        <div className="grid grid-cols-3 gap-4">
+          <p className="mt-3 text-[13px] text-neutral-500 leading-relaxed max-w-xl">
+            {team.charter}
+          </p>
+
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-neutral-400">
+            <Calendar className="h-3 w-3" />
+            Formed {formatDate(team.formedAt)}
+          </div>
+
+          {/* Divider */}
+          <div
+            className="mt-5 mb-5"
+            style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}
+          />
+
+          {/* Avatar strip — full width, each member with name + role */}
+          <motion.div
+            className="flex flex-wrap gap-5 justify-center"
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+          >
+            {team.members.map((m) => (
+              <motion.div
+                key={m.id}
+                variants={fadeUp}
+                className="flex flex-col items-center gap-1"
+              >
+                <Avatar
+                  name={m.name}
+                  size="lg"
+                  className="ring-[2.5px] ring-white"
+                />
+                <p className="text-[11px] font-semibold text-neutral-800 mt-1 text-center leading-tight">
+                  {m.name.split(" ")[0]}
+                </p>
+                <p className="text-[9px] text-neutral-400 text-center leading-tight max-w-[80px]">
+                  {m.role}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════
+            ROLE COVERAGE — Simple white tiles
+            Count + label only, colored numbers
+            No icons, no wrapper, no summary row
+        ═══════════════════════════════════════ */}
+        <motion.div
+          className="grid grid-cols-3 gap-3"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.4,
+            delay: 0.12,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
           {Object.entries(roleGroups).map(([role, count]) => {
-            const accent = roleAccents[role] || { bg: "from-[#A18072]/8 to-[#A18072]/3", text: "text-[#A18072]", border: "border-[#A18072]/15" };
+            const token = roleCategoryToken[role] || "primary";
             return (
               <div
                 key={role}
-                className={cn(
-                  "rounded-[var(--radius-lg)] border p-5 text-center bg-gradient-to-br transition-all hover:shadow-warm-sm",
-                  accent.bg,
-                  accent.border,
-                )}
+                className="rounded-xl bg-white p-4 text-center"
+                style={cardStyle}
               >
-                <p className={cn("text-3xl font-heading font-bold", accent.text)}>{count}</p>
-                <p className="text-xs text-text-secondary mt-1 font-medium">{role}</p>
+                <p
+                  className="text-[22px] font-bold tabular-nums leading-none"
+                  style={{ color: `var(--color-${token})` }}
+                >
+                  {count}
+                </p>
+                <p
+                  className="text-[9px] font-semibold uppercase text-neutral-400 mt-1.5"
+                  style={{ letterSpacing: "0.1em" }}
+                >
+                  {role}
+                </p>
               </div>
             );
           })}
-        </div>
+        </motion.div>
 
-        {/* Member Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {team.members.map((member) => (
-            <div
-              key={member.id}
-              className={cn(
-                "rounded-[var(--radius-xl)] bg-white border border-black/[0.04] p-5 shadow-warm transition-all duration-300 hover-lift overflow-hidden relative",
-                statusCardStyles[member.status],
-              )}
-            >
-              {/* Status top bar */}
-              <div className={cn(
-                "absolute top-0 left-0 right-0 h-[3px]",
-                member.status === "active" && "bg-gradient-to-r from-[#6B8F71] to-[#7A8F66]",
-                member.status === "idle" && "bg-gradient-to-r from-[#B8A060] to-[#C9B85C]",
-                member.status === "away" && "bg-gradient-to-r from-[#9C8E84] to-[#B5A89E]",
-              )} />
+        {/* ═══════════════════════════════════════
+            MEMBER CARDS — Clean white cards with
+            status dot, skills, reliability bar.
+            No top stripe, no gradient backgrounds.
+        ═══════════════════════════════════════ */}
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        >
+          {team.members.map((member) => {
+            const status = statusConfig[member.status];
 
-              <div className="flex items-start gap-3">
-                <div className="relative">
-                  <Avatar name={member.name} size="lg" />
-                  <span
-                    className={cn(
-                      "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white",
-                      statusColors[member.status],
-                      member.status === "active" && "animate-[pulse-soft_2s_ease_infinite]",
-                    )}
-                  />
+            return (
+              <motion.div
+                key={member.id}
+                variants={fadeUp}
+                className="rounded-2xl bg-white p-5 hover-lift transition-all flex flex-col"
+                style={cardStyle}
+              >
+                {/* Avatar + info */}
+                <div className="flex items-start gap-3.5">
+                  <div className="relative shrink-0">
+                    <Avatar name={member.name} size="lg" />
+                    {/* Status dot */}
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white"
+                      style={{
+                        backgroundColor: `var(--color-${status.token})`,
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-neutral-900 leading-snug">
+                      {member.name}
+                    </p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
+                      {member.role}
+                    </p>
+                    <span
+                      className="inline-block mt-1.5 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      style={{
+                        letterSpacing: "0.08em",
+                        background: `color-mix(in srgb, var(--color-${status.token}) 10%, transparent)`,
+                        color: `var(--color-${status.token})`,
+                      }}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-text-deep">
-                    {member.name}
-                  </p>
-                  <p className="text-[11px] text-text-secondary">{member.role}</p>
-                  <Badge variant="outline" className="mt-1 text-[10px]">
-                    {member.status}
-                  </Badge>
-                </div>
-              </div>
 
-              <div className="mt-4 space-y-3">
-                <div className="flex flex-wrap gap-1">
+                {/* Skills */}
+                <div className="mt-4 flex flex-wrap gap-1">
                   {member.skills.map((s) => (
                     <SkillChip key={s} skill={s} />
                   ))}
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-text-muted font-medium">Reliability</span>
-                    <span className="font-bold text-text-deep tabular-nums">
+                {/* Reliability bar */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-[11px] mb-1.5">
+                    <span className="text-neutral-400 font-medium">
+                      Reliability
+                    </span>
+                    <span className="font-bold text-neutral-900 tabular-nums">
                       {member.reliabilityScore}%
                     </span>
                   </div>
                   <Progress
                     value={member.reliabilityScore}
+                    className="h-1.5"
                     indicatorClassName={
                       member.reliabilityScore >= 90
-                        ? "bg-gradient-to-r from-[#6B8F71] to-[#7A8F66]"
+                        ? "bg-secondary"
                         : member.reliabilityScore >= 70
-                          ? "bg-gradient-to-r from-[#B8A060] to-[#C9B85C]"
-                          : "bg-gradient-to-r from-[#8E4A55] to-[#D4705F]"
+                          ? "bg-accent-gold"
+                          : "bg-primary"
                     }
                   />
                 </div>
 
-                <p className="text-[11px] text-text-muted tabular-nums">
-                  {member.tasksCompleted} tasks completed
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+                {/* Tasks completed */}
+                <div
+                  className="mt-3.5 pt-3.5 flex items-center justify-between"
+                  style={{
+                    borderTop: "1px solid rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <span className="text-[11px] text-neutral-400">
+                    Tasks completed
+                  </span>
+                  <span className="text-[13px] font-bold text-neutral-900 tabular-nums">
+                    {member.tasksCompleted}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
 
-        {/* Team Chat Placeholder */}
-        <div className="rounded-[var(--radius-xl)] bg-gradient-to-br from-[#FAF7F4] to-white border border-black/[0.04] p-6 shadow-warm relative overflow-hidden">
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-[#A18072]/[0.04] blur-3xl pointer-events-none" />
-          <div className="flex items-start gap-4 relative z-10">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#A18072] to-[#BFA094] shadow-sm">
-              <MessageCircle className="h-7 w-7 text-white" />
+        {/* ═══════════════════════════════════════
+            TEAM CHAT — Clean card, Coming Soon
+        ═══════════════════════════════════════ */}
+        <motion.div
+          className="rounded-2xl bg-white p-6"
+          style={cardStyle}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.4,
+            delay: 0.18,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-primary) 10%, transparent)",
+              }}
+            >
+              <MessageCircle
+                className="h-5 w-5"
+                style={{ color: "var(--color-primary)" }}
+              />
             </div>
             <div>
-              <h3 className="font-heading text-lg font-bold text-text-deep">Team Chat</h3>
-              <p className="mt-1 text-sm text-text-secondary">
+              <h3
+                className="text-[15px] font-bold text-neutral-900"
+                style={{ letterSpacing: "-0.01em" }}
+              >
+                Team Chat
+              </h3>
+              <p className="mt-1 text-[13px] text-neutral-500 leading-relaxed max-w-lg">
                 Real-time team communication with task context, code sharing,
                 and quick check-ins.
               </p>
-              <Badge variant="warning" className="mt-2">
+              <Badge variant="warning" className="mt-2.5">
                 Coming Soon
               </Badge>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </PageTransition>
   );
