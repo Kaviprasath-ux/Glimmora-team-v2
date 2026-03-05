@@ -93,10 +93,10 @@ function GlassInput({
       <input
         className={[
           "flex h-10 w-full rounded-[10px] px-3.5 py-2 text-[13.5px] text-text-deep placeholder:text-text-muted/60 transition-all duration-200",
-          "border border-transparent focus:outline-none focus:ring-[1.5px]",
+          "outline-none ring-0 transition-all duration-200",
           error
-            ? "bg-error/[0.04] ring-[1.5px] ring-error/30"
-            : "bg-white/60 hover:bg-white/80 focus:bg-white focus:ring-primary/30 focus:border-primary/20",
+            ? "bg-error/[0.04] border border-error/25"
+            : "bg-white/50 border border-transparent hover:bg-white/70 focus:bg-white focus:border-primary/25",
           className,
         ].filter(Boolean).join(" ")}
         style={{ backdropFilter: "blur(8px)" }}
