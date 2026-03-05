@@ -88,13 +88,13 @@ function MobileNavItem({
       className={cn(
         "flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all min-w-0",
         isActive
-          ? "text-[#6B5545]"
-          : "text-[#9C8E84]",
+          ? "text-primary-dark"
+          : "text-text-muted",
       )}
     >
       <div className={cn(
         "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
-        isActive && "bg-gradient-to-br from-[#8B7565] to-[#6B5545] shadow-[0_2px_12px_rgba(139,117,101,0.3)]",
+        isActive && "bg-gradient-to-br from-primary to-primary-dark shadow-[0_2px_12px_rgba(161,128,114,0.3)]",
       )}>
         <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-white" : "")} />
       </div>
@@ -111,6 +111,8 @@ export function FloatingNav() {
   const { data: unreadCount } = useUnreadCount();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  if (!user) return null;
+
   const checkActive = (href: string) =>
     pathname === href ||
     (href !== "/workspace" && pathname.startsWith(href));
@@ -124,8 +126,8 @@ export function FloatingNav() {
           <div
             className="flex h-7 w-7 items-center justify-center rounded-lg font-heading font-bold text-[11px] text-white shrink-0"
             style={{
-              background: "linear-gradient(135deg, #8B7565, #6B5545)",
-              boxShadow: "0 2px 8px rgba(139,117,101,0.3)",
+              background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent)",
             }}
           >
             G
@@ -133,7 +135,7 @@ export function FloatingNav() {
         </Link>
 
         {/* Divider */}
-        <div className="h-5 w-px bg-[#8B7565]/10 mr-1" />
+        <div className="h-5 w-px bg-primary/10 mr-1" />
 
         {/* Nav Items */}
         {navItems.map((item) => (
@@ -141,14 +143,14 @@ export function FloatingNav() {
         ))}
 
         {/* Divider */}
-        <div className="h-5 w-px bg-[#8B7565]/10 ml-1 mr-1" />
+        <div className="h-5 w-px bg-primary/10 ml-1 mr-1" />
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-0.5 pr-1">
           {/* Search */}
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[#9C8E84] hover:text-[#6B5545] hover:bg-[#8B7565]/[0.06] transition-all text-[13px]">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-full text-text-muted hover:text-primary-dark hover:bg-primary/[0.06] transition-all text-[13px]">
             <Search className="h-4 w-4" />
-            <kbd className="hidden xl:inline-flex items-center gap-0.5 rounded-md bg-black/[0.04] border border-black/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-[#9C8E84]">
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 rounded-md bg-black/[0.04] border border-black/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
               <Command className="h-2.5 w-2.5" />K
             </kbd>
           </button>
@@ -159,7 +161,7 @@ export function FloatingNav() {
           {/* User Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center rounded-full p-1 hover:bg-[#8B7565]/[0.06] transition-all ml-0.5">
+              <button className="flex items-center rounded-full p-1 hover:bg-primary/[0.06] transition-all ml-0.5">
                 <Avatar name={user.name} size="sm" />
               </button>
             </DropdownMenuTrigger>
@@ -195,7 +197,7 @@ export function FloatingNav() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[#C46B5A]">
+              <DropdownMenuItem className="text-accent-terracotta">
                 <LogOut className="h-4 w-4" /> Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -209,15 +211,15 @@ export function FloatingNav() {
           background: "rgba(245, 240, 232, 0.85)",
           backdropFilter: "blur(20px) saturate(1.6)",
           WebkitBackdropFilter: "blur(20px) saturate(1.6)",
-          borderBottom: "1px solid rgba(139, 117, 101, 0.06)",
+          borderBottom: "1px solid color-mix(in srgb, var(--color-primary) 6%, transparent)",
         }}
       >
         <Link href="/workspace" className="flex items-center gap-2.5">
           <div
             className="flex h-8 w-8 items-center justify-center rounded-[10px] font-heading font-bold text-xs text-white"
             style={{
-              background: "linear-gradient(135deg, #8B7565, #6B5545)",
-              boxShadow: "0 2px 8px rgba(139,117,101,0.3)",
+              background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))",
+              boxShadow: "0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent)",
             }}
           >
             G
@@ -245,7 +247,7 @@ export function FloatingNav() {
                 <Link href="/workspace/settings"><Settings className="h-4 w-4" /> Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[#C46B5A]">
+              <DropdownMenuItem className="text-accent-terracotta">
                 <LogOut className="h-4 w-4" /> Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -269,12 +271,12 @@ export function FloatingNav() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className={cn(
               "flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all",
-              mobileMenuOpen ? "text-[#6B5545]" : "text-[#9C8E84]",
+              mobileMenuOpen ? "text-primary-dark" : "text-text-muted",
             )}
           >
             <div className={cn(
               "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
-              mobileMenuOpen && "bg-[#8B7565]/10",
+              mobileMenuOpen && "bg-primary/10",
             )}>
               {mobileMenuOpen ? <X className="h-[18px] w-[18px]" /> : <Menu className="h-[18px] w-[18px]" />}
             </div>
@@ -304,7 +306,7 @@ export function FloatingNav() {
                 background: "rgba(255, 255, 255, 0.92)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(139, 117, 101, 0.08)",
+                border: "1px solid color-mix(in srgb, var(--color-primary) 8%, transparent)",
                 boxShadow: "0 -4px 24px rgba(45, 35, 25, 0.08)",
               }}
             >
@@ -320,8 +322,8 @@ export function FloatingNav() {
                       className={cn(
                         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                         isActive
-                          ? "bg-gradient-to-r from-[#8B7565] to-[#6B5545] text-white shadow-[0_2px_12px_rgba(139,117,101,0.3)]"
-                          : "text-[#6B5545] hover:bg-[#8B7565]/[0.06]",
+                          ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-[0_2px_12px_rgba(161,128,114,0.3)]"
+                          : "text-primary-dark hover:bg-primary/[0.06]",
                       )}
                     >
                       <Icon className="h-4.5 w-4.5" />
