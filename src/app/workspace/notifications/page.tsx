@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -27,10 +27,32 @@ import {
   CheckCheck,
   Bell,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { timeAgo, cn } from "@/lib/utils";
 import type { NotificationType } from "@/types";
 
+const ITEMS_PER_PAGE = 20;
+
+/* ── Animations ── */
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.02 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
+  },
+};
+const cardStyle = {
+  border: "1px solid rgba(0,0,0,0.06)",
+  boxShadow: "var(--shadow-warm)",
+} as const;
+
+/* ── Type → icon mapping ── */
 const typeIcons: Record<NotificationType, React.ElementType> = {
   task: ListTodo,
   payment: Wallet,
@@ -39,20 +61,13 @@ const typeIcons: Record<NotificationType, React.ElementType> = {
   system: Info,
 };
 
-const typeStyles: Record<NotificationType, { bg: string; text: string }> = {
-  task: { bg: "bg-gradient-to-br from-[#A18072]/15 to-[#A18072]/5", text: "text-[#A18072]" },
-  payment: { bg: "bg-gradient-to-br from-[#6B8F71]/15 to-[#6B8F71]/5", text: "text-[#6B8F71]" },
-  badge: { bg: "bg-gradient-to-br from-[#B8A060]/15 to-[#B8A060]/5", text: "text-[#B8A060]" },
-  team: { bg: "bg-gradient-to-br from-[#BFA094]/15 to-[#BFA094]/5", text: "text-[#BFA094]" },
-  system: { bg: "bg-gradient-to-br from-[#A18072]/10 to-[#A18072]/4", text: "text-[#A18072]" },
-};
-
-const typeStripeColors: Record<NotificationType, string> = {
-  task: "border-l-[#A18072]",
-  payment: "border-l-[#6B8F71]",
-  badge: "border-l-[#B8A060]",
-  team: "border-l-[#BFA094]",
-  system: "border-l-[#A18072]",
+/* ── Type → color token mapping ── */
+const typeColors: Record<NotificationType, string> = {
+  task: "var(--color-primary)",
+  payment: "var(--color-accent-sage)",
+  badge: "var(--color-accent-gold)",
+  team: "var(--color-secondary)",
+  system: "var(--color-accent-terracotta)",
 };
 
 const tabs = [
@@ -66,6 +81,7 @@ const tabs = [
 
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const typeFilter = activeTab === "all" ? undefined : activeTab;
   const { data: notifications, isLoading } = useNotifications(
     typeFilter ? { type: typeFilter } : undefined,
@@ -73,14 +89,28 @@ export default function NotificationsPage() {
   const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setVisibleCount(ITEMS_PER_PAGE);
+  };
+
+  const visibleNotifications = useMemo(
+    () => (notifications ?? []).slice(0, visibleCount),
+    [notifications, visibleCount],
+  );
+  const remaining = (notifications?.length ?? 0) - visibleCount;
+
   if (isLoading || !notifications) {
     return (
       <PageTransition>
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-48" />
-          {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-[var(--radius)]" />
-          ))}
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-7 w-36" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-10 w-96 rounded-xl" />
+          <Skeleton className="h-[400px] rounded-2xl" />
         </div>
       </PageTransition>
     );
@@ -90,13 +120,28 @@ export default function NotificationsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <motion.div
+        className="space-y-5"
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+      >
+        {/* ── Hero ── */}
+        <motion.div
+          variants={fadeUp}
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-3"
+        >
           <div>
-            <h1 className="font-heading text-3xl font-bold text-gradient-warm">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">
+              Updates
+            </p>
+            <h1
+              className="font-heading font-bold text-neutral-950 leading-tight"
+              style={{ fontSize: 28, letterSpacing: "-0.025em" }}
+            >
               Notifications
             </h1>
-            <p className="mt-1 text-text-secondary">
+            <p className="mt-1.5 text-[13px] text-neutral-500 leading-relaxed">
               {unreadCount > 0
                 ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
                 : "All caught up!"}
@@ -111,99 +156,147 @@ export default function NotificationsPage() {
               <CheckCheck className="h-4 w-4 mr-1" /> Mark all read
             </Button>
           )}
-        </div>
+        </motion.div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+        {/* ── Tabs + List ── */}
+        <motion.div variants={fadeUp}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
             {tabs.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+              <TabsContent key={tab.value} value={tab.value}>
+                {notifications.length === 0 ? (
+                  <EmptyState
+                    icon={Bell}
+                    title="No notifications"
+                    description={`No ${tab.value === "all" ? "" : tab.label.toLowerCase() + " "}notifications yet.`}
+                    className="mt-4"
+                  />
+                ) : (
+                  <>
+                    <div
+                      className="rounded-2xl bg-white overflow-hidden mt-4"
+                      style={cardStyle}
+                    >
+                      {visibleNotifications.map((notif, i) => {
+                        const Icon = typeIcons[notif.type];
+                        const color = typeColors[notif.type];
+                        const isLast =
+                          i === visibleNotifications.length - 1;
 
-          {tabs.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value}>
-              {notifications.length === 0 ? (
-                <EmptyState
-                  icon={Bell}
-                  title="No notifications"
-                  description={`No ${tab.value === "all" ? "" : tab.label.toLowerCase() + " "}notifications yet.`}
-                  className="mt-4"
-                />
-              ) : (
-                <div className="space-y-1 mt-4">
-                  {notifications.map((notif, i) => {
-                    const Icon = typeIcons[notif.type];
-                    const style = typeStyles[notif.type];
-                    return (
-                      <motion.div
-                        key={notif.id}
-                        initial={{ opacity: 0, x: -16 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.25, delay: i * 0.02, ease: [0.33, 1, 0.68, 1] }}
-                      >
-                        <Link
-                          href={notif.actionUrl || "#"}
-                          onClick={() => {
-                            if (!notif.read)
-                              markRead.mutate(notif.id);
-                          }}
-                          className={cn(
-                            "flex items-start gap-3 rounded-[var(--radius-md)] border-l-[3px] p-4 transition-all group",
-                            typeStripeColors[notif.type],
-                            notif.read
-                              ? "hover:bg-black/[0.02] border-l-transparent"
-                              : "bg-gradient-to-r from-[#A18072]/[0.04] to-transparent hover:from-[#A18072]/[0.06]",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius)]",
-                              style.bg,
-                            )}
+                        return (
+                          <motion.div
+                            key={notif.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              duration: 0.25,
+                              delay: i * 0.02,
+                              ease: [0.33, 1, 0.68, 1],
+                            }}
                           >
-                            <Icon className={cn("h-4 w-4", style.text)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p
-                                className={cn(
-                                  "text-sm",
-                                  notif.read
-                                    ? "text-text-secondary"
-                                    : "text-text-deep font-semibold",
-                                )}
+                            <Link
+                              href={notif.actionUrl || "#"}
+                              onClick={() => {
+                                if (!notif.read) markRead.mutate(notif.id);
+                              }}
+                              className={cn(
+                                "flex items-start gap-3 px-5 py-4 transition-all group",
+                                notif.read
+                                  ? "hover:bg-neutral-50"
+                                  : "bg-primary/[0.02] hover:bg-primary/[0.04]",
+                              )}
+                              style={
+                                !isLast
+                                  ? {
+                                      borderBottom:
+                                        "1px solid rgba(0,0,0,0.04)",
+                                    }
+                                  : undefined
+                              }
+                            >
+                              <div
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                                style={{
+                                  background: `color-mix(in srgb, ${color} 10%, transparent)`,
+                                }}
                               >
-                                {notif.title}
-                              </p>
-                              <span className="text-[11px] text-text-muted shrink-0">
-                                {timeAgo(notif.createdAt)}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-text-muted mt-0.5 line-clamp-1">
-                              {notif.message}
-                            </p>
-                            {notif.actionLabel && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-[#A18072] font-medium mt-1 group-hover:underline">
-                                {notif.actionLabel}
-                                <ArrowRight className="h-3 w-3" />
-                              </span>
-                            )}
-                          </div>
-                          {!notif.read && (
-                            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#A18072] mt-2 animate-[pulse-soft_2s_ease_infinite]" />
-                          )}
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
+                                <Icon
+                                  className="h-4 w-4"
+                                  style={{ color }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p
+                                    className={cn(
+                                      "text-sm",
+                                      notif.read
+                                        ? "text-neutral-500"
+                                        : "text-neutral-900 font-semibold",
+                                    )}
+                                  >
+                                    {notif.title}
+                                  </p>
+                                  <span className="text-[11px] text-neutral-400 shrink-0">
+                                    {timeAgo(notif.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
+                                  {notif.message}
+                                </p>
+                                {notif.actionLabel && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-[11px] font-medium mt-1 group-hover:underline"
+                                    style={{ color: "var(--color-primary)" }}
+                                  >
+                                    {notif.actionLabel}
+                                    <ArrowRight className="h-3 w-3" />
+                                  </span>
+                                )}
+                              </div>
+                              {!notif.read && (
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full mt-2 animate-[pulse-soft_2s_ease_infinite]"
+                                  style={{
+                                    background: "var(--color-primary)",
+                                  }}
+                                />
+                              )}
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+
+                    {remaining > 0 && (
+                      <div className="flex justify-center mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setVisibleCount((c) => c + ITEMS_PER_PAGE)
+                          }
+                        >
+                          <ChevronDown className="h-4 w-4 mr-1.5" />
+                          Show more ({Math.min(remaining, ITEMS_PER_PAGE)} of{" "}
+                          {remaining} remaining)
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </motion.div>
+      </motion.div>
     </PageTransition>
   );
 }
